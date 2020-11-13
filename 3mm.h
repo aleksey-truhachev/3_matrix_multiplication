@@ -41,11 +41,14 @@
 # endif
 #endif
 #include <stdio.h>
-//#include <unistd.h>
+#include <unistd.h>
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-//#include <sys/time.h>
+#include <sys/time.h>
+#include <iostream>
+//#include <omp.h>
+#include <vector>
 #endif
