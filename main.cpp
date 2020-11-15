@@ -143,7 +143,7 @@ int main(int argc, char** argv)
 	transpose_parall(D_transp, D, nm, nl);
 	multiplication_transp_parall(C, D_transp, CD, nj, nm, nl);
 	transpose_parall(CD_transp, CD, nj, nl);
-	multiplication_transp_parall(AB, CD_transp, ABCD1, ni, nj, nl);
+	multiplication_transp_parall(AB, CD_transp, ABCD, ni, nj, nl);
 	t2 = omp_get_wtime();
 	cout << "С параллельным транспонированием: " << t2 - t1 << " секунд" << endl; //Выполнение для LARGE_DATASET за  0,85  секунды
 
