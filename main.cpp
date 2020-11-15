@@ -9,7 +9,7 @@ typedef double datatype;
 
 
 # if !defined(MINI_DATASET) && !defined(SMALL_DATASET) && !defined(MEDIUM_DATASET) && !defined(LARGE_DATASET) && !defined(EXTRALARGE_DATASET) && !defined(EXTRAMINI_DATASET)
-#define EXTRALARGE_DATASET
+#define LARGE_DATASET
 # endif
 # if !defined(NI) && !defined(NJ) && !defined(NK) && !defined(NL) && !defined(NM)
 # ifdef EXTRAMINI_DATASET
@@ -138,6 +138,21 @@ void transpose(vector<datatype> &X_transp, vector<datatype> &X, int n1, int n2)
 }
 
 
+void transpose_parall(vector<datatype> &X_transp, vector<datatype> &X, int n1, int n2)
+{
+	// X = (n1 n2)
+	// X_transp = (n2 n1)
+#pragma omp parallel for
+	for (int i = 0; i < n1; i++)
+	{
+		for (int j = 0; j < n2; j++)
+		{
+			X_transp[j*n1 + i] = X[i*n2 + j];
+		}
+	}
+}
+
+
 void multiplication_transp(vector<datatype> &X, vector<datatype> &Y_transp, vector<datatype> &XY, int n1, int n2, int n3)
 {
 	// X = (n1 n2)
@@ -156,6 +171,28 @@ void multiplication_transp(vector<datatype> &X, vector<datatype> &Y_transp, vect
 		}
 	}
 }
+
+
+void multiplication_transp_parall(vector<datatype> &X, vector<datatype> &Y_transp, vector<datatype> &XY, int n1, int n2, int n3)
+{
+	// X = (n1 n2)
+	// Y = (n2 n3)
+	// Y_transp = (n3 n2)
+	// XY = (n1 n3)
+	//перемножаем по стокам. XY[i][j] += X[i][k] * Y_transp[j][k]
+#pragma omp parallel for
+	for (int i = 0; i < n1; i++)
+	{
+		for (int j = 0; j < n3; j++)
+		{
+			for (int k = 0; k < n2; k++)
+			{
+				XY[i*n3 + j] += X[i*n2 + k] * Y_transp[j*n2 + k];
+			}
+		}
+	}
+}
+
 
 int main(int argc, char** argv)
 {
@@ -202,9 +239,42 @@ int main(int argc, char** argv)
 	transpose(CD_transp, CD, nj, nl);
 	multiplication_transp(AB, CD_transp, ABCD, ni, nj, nl);
 	t2 = omp_get_wtime();
-	cout << "— транспонированием: " << t2 - t1 << " секунд (посчитано верно)" << endl; //¬ыполнение дл€ LARGE_DATASET за  8.72 - 8.74  секунды
-	//print_array(ABCD, ni, nl);
+	cout << "— транспонированием: " << t2 - t1 << " секунд (посчитано верно)" << endl; //¬ыполнение дл€ LARGE_DATASET за  2,9 - 3 секунды
 	
+
+	init(ni, nk, nj, nm, nl, A, B, C, D); // initialization A, B, C, D 
+	t1 = omp_get_wtime();
+	transpose_parall(B_transp, B, nk, nj);
+	multiplication_transp_parall(A, B_transp, AB, ni, nk, nj);
+	/*cout << "A" << endl;
+	print_array(A, ni, nk);
+	cout << "B" << endl;
+	print_array(B, nk, nj);
+	cout << "AB" << endl;
+	print_array(AB, ni, nj);*/
+	transpose_parall(D_transp, D, nm, nl);
+	multiplication_transp_parall(C, D_transp, CD, nj, nm, nl);
+	/*cout << "C" << endl;
+	print_array(C, nj, nm);
+	cout << "D" << endl;
+	print_array(D, nm, nl);
+	cout << "CD" << endl;
+	print_array(CD, nj, nl);*/
+	transpose_parall(CD_transp, CD, nj, nl);
+	multiplication_transp_parall(AB, CD_transp, ABCD1, ni, nj, nl);
+	t2 = omp_get_wtime();
+	cout << "— параллельным транспонированием: " << t2 - t1 << " секунд" << endl; //¬ыполнение дл€ LARGE_DATASET за  0,85  секунды
+
+	int counter = 0;
+	for (int i = 0; i < ABCD1.size(); i++)
+	{
+		if (abs(ABCD1[i] - 4*ABCD[i]) > 1.e-8)
+		{
+			counter++;
+		}
+	}
+	cout << counter << endl;
+
 
 	//init(ni, nk, nj, nm, nl, A, B, C, D); // initialization A, B, C, D 
 	//t1 = omp_get_wtime();
@@ -239,6 +309,10 @@ int main(int argc, char** argv)
 	//cout << counter << endl;
 
 	
+
+
+
+
 
 
 
@@ -296,23 +370,6 @@ int main(int argc, char** argv)
 	//	}
 	//}
 	//cout << counter << endl;*/
-
-
-
-
-
-
-	//int ni = 3;
-	//int nk = 2;
-	//int nj = 4;
-	//vector<datatype> A = {1, 5, 7, 7, 6, 2};
-	//vector<datatype> B = {1, 2, 3, 4, 5, 6, 3, 2};
-	//vector<datatype> B_transp(nj*nk);
-	//vector<datatype> AB(ni*nj);
-	//transpose(B_transp, B, nk, nj);
-	//multiplication_transp(A, B_transp, AB, ni, nk, nj);
-	////multiplication(A, B, AB, ni, nk, nj);
-	//print_array(AB, ni, nj);
 
 	cin.get();
 	return 0;
